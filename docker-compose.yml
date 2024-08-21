@@ -1,0 +1,11 @@
+services:
+  django:
+    environment:
+      DJANGO_SETTINGS_MODULE: "settings"
+    build: .
+    command: uvicorn asgi:application --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./project:/project
+      - ./data:/data
+    ports:
+      - "8800:8000"
