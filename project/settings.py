@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "common",
     "mw_events",
     "mw_scores",
 ]
@@ -83,6 +84,9 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "data/db.sqlite3",
+        "OPTIONS": {
+            "init_command": "PRAGMA journal_mode=wal;",
+        },
     }
 }
 

@@ -24,3 +24,5 @@ class LiftwingResponse(models.Model):
     prediction = models.BooleanField(null=True)
     true_probability = models.DecimalField(max_digits=17, decimal_places=17, null=True)
     status_code = models.PositiveSmallIntegerField(null=True)
+    error_detail = models.CharField(max_length=256, null=True)
+    created = models.DateTimeField(auto_now_add=True)

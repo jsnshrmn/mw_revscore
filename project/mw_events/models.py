@@ -1,17 +1,23 @@
 from aiohttp import ClientSession
+from asyncio import sleep
 from django.apps import apps
 from django.db import models
 
 
 class RevisionCreateManager(models.Manager):
+    def scoreable(self):
+        return self.filter(
+            rev_parent_id__isnull=False,
+            liftwingresponse__isnull=True,
+            database__in=["enwiki"],
+        )
+
     async def score(self):
         url = "https://api.wikimedia.org/service/lw/inference/v1/models/revertrisk-language-agnostic:predict"
         headers = {"User-Agent": "mw_revscore/dev (WMF Moderator Tools Test)"}
         session = ClientSession()
         LiftwingResponse = apps.get_model("mw_scores", "LiftwingResponse")
-        async for revision_create in self.filter(
-            liftwingresponse__isnull=True, database__in=["enwiki"]
-        ):
+        async for revision_create in self.scoreable():
             if not revision_create.database.endswith("wiki"):
                 continue
             lang = revision_create.database[:-4]
@@ -37,16 +43,20 @@ class RevisionCreateManager(models.Manager):
                     true_probability = data["output"]["probabilities"]["true"]
                 except KeyError:
                     true_probability = None
+                try:
+                    error_detail = data["detail"]
+                except KeyError:
+                    error_detail = None
 
-                liftwing_response = LiftwingResponse(
+                await LiftwingResponse(
                     model_name=model_name,
                     model_version=model_version,
                     revision_create=revision_create,
                     prediction=prediction,
                     true_probability=true_probability,
                     status_code=response.status,
-                )
-                await liftwing_response.asave()
+                ).asave()
+        await sleep(250)
         await session.close()
 
 

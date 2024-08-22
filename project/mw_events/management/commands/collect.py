@@ -59,7 +59,10 @@ class Command(BaseCommand):
         else:
             url = base_stream_url
 
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
         loop.run_until_complete(self._process_events(url))
 
     async def _process_events(self, url):
@@ -77,7 +80,12 @@ class Command(BaseCommand):
             string_format = "%Y-%m-%dT%H:%M:%SZ"
         else:
             string_format = "%Y-%m-%dT%H:%M:%S+00:00"
-        datetime_object = datetime.strptime(event_data["meta"]["dt"], string_format)
+        # May or may not have milliseconds
+        try:
+            datetime_object = datetime.strptime(event_data["meta"]["dt"], string_format)
+        except ValueError:
+            string_format = "%Y-%m-%dT%H:%M:%S.%fZ"
+            datetime_object = datetime.strptime(event_data["meta"]["dt"], string_format)
         try:
             performer = event_data["performer"]
         except KeyError:
@@ -89,6 +97,9 @@ class Command(BaseCommand):
                     event_id=event_data["meta"]["id"]
                 )
             )
+            return
+
+        if event_data["database"] not in ["enwiki"]:
             return
 
         # Other potentially null fields
