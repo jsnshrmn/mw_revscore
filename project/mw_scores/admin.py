@@ -1,10 +1,35 @@
 from django.contrib import admin
 
-from .models import LiftwingResponse
+from .models import RevertRiskLaResponse, RevertRiskMlResponse
 
 
-class LiftwingResponseAdmin(admin.ModelAdmin):
-    list_display = ("revision_create__rev_id", "created", "revision_create__dt", "revision_create__database", "status_code", "true_probability")
+class RevertRiskLaResponseAdmin(admin.ModelAdmin):
+    def elapsed_time(self, obj):
+        elapsed = obj.created - obj.requested
+        return elapsed
+
+    list_display = (
+        "revision_create__rev_id",
+        "elapsed_time",
+        "status_code",
+        "true_probability",
+    )
 
 
-admin.site.register(LiftwingResponse, LiftwingResponseAdmin)
+admin.site.register(RevertRiskLaResponse, RevertRiskLaResponseAdmin)
+
+
+class RevertRiskMlResponseAdmin(admin.ModelAdmin):
+    def elapsed_time(self, obj):
+        elapsed = obj.created - obj.requested
+        return elapsed
+
+    list_display = (
+        "revision_create__rev_id",
+        "elapsed_time",
+        "status_code",
+        "true_probability",
+    )
+
+
+admin.site.register(RevertRiskMlResponse, RevertRiskMlResponseAdmin)

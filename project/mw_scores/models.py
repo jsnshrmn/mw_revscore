@@ -5,6 +5,7 @@ from mw_events.models import RevisionCreate
 class LiftwingResponse(models.Model):
     class Meta:
         app_label = "mw_scores"
+        abstract = True
 
     def json_default():
         """
@@ -12,7 +13,6 @@ class LiftwingResponse(models.Model):
         """
         return {}
 
-    model_name = models.CharField(max_length=128, null=True)
     model_version = models.PositiveSmallIntegerField(null=True)
     # should match RevisionCreate.database
     # wiki_db = models.CharField(max_length=32, null=True)
@@ -26,3 +26,12 @@ class LiftwingResponse(models.Model):
     status_code = models.PositiveSmallIntegerField(null=True)
     error_detail = models.CharField(max_length=256, null=True)
     created = models.DateTimeField(auto_now_add=True)
+    requested = models.DateTimeField()
+
+
+class RevertRiskLaResponse(LiftwingResponse):
+    model_name = models.CharField(max_length=128, null=True)
+
+
+class RevertRiskMlResponse(LiftwingResponse):
+    model_name = models.CharField(max_length=128, null=True)

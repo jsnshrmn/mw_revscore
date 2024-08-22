@@ -2,60 +2,81 @@ from aiohttp import ClientSession
 from asyncio import sleep
 from django.apps import apps
 from django.db import models
+from django.utils.timezone import now
 
 
 class RevisionCreateManager(models.Manager):
     def scoreable(self):
-        return self.filter(
+        scoreable = self.filter(
             rev_parent_id__isnull=False,
-            liftwingresponse__isnull=True,
             database__in=["enwiki"],
         )
+        return scoreable
 
     async def score(self):
-        url = "https://api.wikimedia.org/service/lw/inference/v1/models/revertrisk-language-agnostic:predict"
+        models = ["revertrisk-language-agnostic", "revertrisk-multilingual"]
+        url = "https://api.wikimedia.org"
         headers = {"User-Agent": "mw_revscore/dev (WMF Moderator Tools Test)"}
-        session = ClientSession()
-        LiftwingResponse = apps.get_model("mw_scores", "LiftwingResponse")
-        async for revision_create in self.scoreable():
+        session = ClientSession(url)
+        RevertRiskLaResponse = apps.get_model("mw_scores", "RevertRiskLaResponse")
+        RevertRiskMlResponse = apps.get_model("mw_scores", "RevertRiskMlResponse")
+        to_score = self.scoreable().filter(revertrisklaresponse__isnull=True)
+        to_score.union(
+            self.scoreable().filter(revertriskmlresponse__isnull=True)
+        ).order_by("rev_id")
+        async for revision_create in to_score:
             if not revision_create.database.endswith("wiki"):
                 continue
             lang = revision_create.database[:-4]
-            async with session.post(
-                url,
-                json={"rev_id": revision_create.rev_id, "lang": lang},
-                headers=headers,
-            ) as response:
-                data = await response.json()
-                try:
-                    model_name = data["model_name"]
-                except KeyError:
-                    model_name = None
-                try:
-                    model_version = data["model_version"]
-                except KeyError:
-                    model_version = None
-                try:
-                    prediction = data["output"]["prediction"]
-                except KeyError:
-                    prediction = None
-                try:
-                    true_probability = data["output"]["probabilities"]["true"]
-                except KeyError:
-                    true_probability = None
-                try:
-                    error_detail = data["detail"]
-                except KeyError:
-                    error_detail = None
+            for model in models:
+                async with session.post(
+                    "/service/lw/inference/v1/models/{}:predict".format(model),
+                    json={"rev_id": revision_create.rev_id, "lang": lang},
+                    headers=headers,
+                ) as response:
+                    requested = now()
+                    data = await response.json()
+                    try:
+                        model_name = data["model_name"]
+                    except KeyError:
+                        model_name = None
+                    try:
+                        model_version = data["model_version"]
+                    except KeyError:
+                        model_version = None
+                    try:
+                        prediction = data["output"]["prediction"]
+                    except KeyError:
+                        prediction = None
+                    try:
+                        true_probability = data["output"]["probabilities"]["true"]
+                    except KeyError:
+                        true_probability = None
+                    try:
+                        error_detail = data["detail"]
+                    except KeyError:
+                        error_detail = None
 
-                await LiftwingResponse(
-                    model_name=model_name,
-                    model_version=model_version,
-                    revision_create=revision_create,
-                    prediction=prediction,
-                    true_probability=true_probability,
-                    status_code=response.status,
-                ).asave()
+                    if model == "revertrisk-language-agnostic":
+                        await RevertRiskLaResponse(
+                            model_name=model_name,
+                            model_version=model_version,
+                            revision_create=revision_create,
+                            prediction=prediction,
+                            true_probability=true_probability,
+                            status_code=response.status,
+                            requested=requested,
+                        ).asave()
+                    elif model == "revertrisk-multilingual":
+                        await RevertRiskMlResponse(
+                            model_name=model_name,
+                            model_version=model_version,
+                            revision_create=revision_create,
+                            prediction=prediction,
+                            true_probability=true_probability,
+                            status_code=response.status,
+                            requested=requested,
+                        ).asave()
         await sleep(250)
         await session.close()
 
