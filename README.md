@@ -19,3 +19,5 @@ After the initial setup, you can just start everything together:
 ## Notes
 Revision Creation event info is stored in MW_EVENTS
 Scores are stored in MW_SCORES
+
+visit http://localhost:8800/ to see a list of revisions scored by both models and the elapsed time for getting scores of each. More to come.

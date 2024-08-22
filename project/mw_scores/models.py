@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.functional import cached_property
 from mw_events.models import RevisionCreate
 
 
@@ -12,6 +13,10 @@ class LiftwingResponse(models.Model):
         JSONField requires a callable wrapper for default value
         """
         return {}
+
+    @cached_property
+    def elapsed(self):
+        return self.created - self.requested
 
     model_version = models.PositiveSmallIntegerField(null=True)
     # should match RevisionCreate.database

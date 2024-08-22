@@ -6,6 +6,17 @@ from django.utils.timezone import now
 
 
 class RevisionCreateManager(models.Manager):
+    def scored(self):
+        return (
+            self.scoreable()
+            .filter(
+                revertrisklaresponse__isnull=False, revertriskmlresponse__isnull=False
+            )
+            .select_related("revertrisklaresponse")
+            .select_related("revertriskmlresponse")
+            .order_by("rev_id")
+        )
+
     def scoreable(self):
         scoreable = self.filter(
             rev_parent_id__isnull=False,
