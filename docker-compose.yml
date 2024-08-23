@@ -3,12 +3,12 @@ services:
     environment:
       DJANGO_SETTINGS_MODULE: "settings"
     build: .
-    command: ["uvicorn", "asgi:application", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    command: ["python", "-m", "gunicorn", "asgi:application", "--bind=0.0.0.0:80", "--forwarded-allow-ips", "*", "--log-level=info", "--reload", "-k", "uvicorn.workers.UvicornWorker"]
     volumes:
       - ./project:/project
       - ./data:/data
     ports:
-      - "8800:8000"
+      - "80:80"
   ingest:
     environment:
       DJANGO_SETTINGS_MODULE: "settings"
