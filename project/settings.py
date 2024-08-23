@@ -79,15 +79,19 @@ WSGI_APPLICATION = "wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
+DATABASE_ROUTERS = ["db_routers.Router"]
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "data/db.sqlite3",
+        "NAME": BASE_DIR / "data/django.sqlite3",
+    },
+    "facts": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "data/facts.sqlite3",
         "OPTIONS": {
             "init_command": "PRAGMA journal_mode=wal;",
         },
-    }
+    },
 }
 
 
