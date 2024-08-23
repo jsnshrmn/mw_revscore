@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-import asyncio
+from asyncio import run
 import aiohttp
 from aiosseclient import aiosseclient
 import hashlib
@@ -59,11 +59,7 @@ class Command(BaseCommand):
         else:
             url = base_stream_url
 
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-        loop.run_until_complete(self._process_events(url))
+        run(self._process_events(url))
 
     async def _process_events(self, url):
         async for event in aiosseclient(url):
