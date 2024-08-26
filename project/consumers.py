@@ -1,12 +1,10 @@
 from threading import Thread
 from django.core.management import call_command
-from django.core.management.base import BaseCommand
+from channels.consumer import AsyncConsumer
 
 
-class Command(BaseCommand):
-    def handle(self, *args, **options):
-        help = "service command for simultaneously collecting revsions and scores"
-
+class BackgroundTaskConsumer(AsyncConsumer):
+    async def ingest(self, message):
         score = Thread(target=call_command, args=("score",))
         collect = Thread(
             target=call_command,

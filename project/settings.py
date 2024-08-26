@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "common",
+    "channels",
     "mw_events",
     "mw_scores",
 ]
@@ -76,6 +76,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "wsgi.application"
 
+ASGI_APPLICATION = "asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [
+                {
+                    "address": "redis://redis:6379",
+                }
+            ]
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases

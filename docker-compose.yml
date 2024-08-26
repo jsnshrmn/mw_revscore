@@ -3,18 +3,22 @@ services:
     environment:
       DJANGO_SETTINGS_MODULE: "settings"
     build: .
-    command: ["python", "-m", "gunicorn", "asgi:application", "--bind=0.0.0.0:80", "--forwarded-allow-ips", "*", "--log-level=info", "--reload", "-k", "uvicorn.workers.UvicornWorker"]
+    command: ["python", "-m", "daphne", "-b", "0.0.0.0", "-p", "80", "asgi:application"]
+    depends_on:
+      - "background"
     volumes:
       - ./project:/project
       - ./data:/data
     ports:
       - "80:80"
-  ingest:
+  background:
     environment:
       DJANGO_SETTINGS_MODULE: "settings"
     build: .
-    command: ["python", "manage.py", "ingest"]
-    restart: always
+    command: ["django-admin", "runworker", "background"]
     volumes:
       - ./project:/project
       - ./data:/data
+  redis:
+    image: docker.io/redis:latest
+    command: redis-server --save 60 1 --loglevel warning
