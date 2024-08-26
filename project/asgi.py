@@ -8,19 +8,20 @@ https://docs.djangoproject.com/en/5.1/howto/deployment/asgi/
 """
 
 import os
-
-from asyncio import run
-from channels.layers import get_channel_layer
-from channels.routing import ChannelNameRouter, ProtocolTypeRouter
 from django.core.asgi import get_asgi_application
-from consumers import BackgroundTaskConsumer
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
+django_asgi = get_asgi_application()
+
+from asyncio import get_event_loop
+from channels.layers import get_channel_layer
+from channels.routing import ChannelNameRouter, ProtocolTypeRouter
+from consumers import BackgroundTaskConsumer
 
 application = ProtocolTypeRouter(
     {
         # Django's ASGI application to handle traditional HTTP requests
-        "http": get_asgi_application(),
+        "http": django_asgi,
         # Channel router for other lifecycles
         "channel": ChannelNameRouter(
             {
@@ -32,4 +33,5 @@ application = ProtocolTypeRouter(
 
 # request ingest start with the server
 channel_layer = get_channel_layer()
-run(channel_layer.send("background", {"type": "ingest"}))
+loop = get_event_loop()
+loop.run_until_complete(channel_layer.send("background", {"type": "ingest"}))

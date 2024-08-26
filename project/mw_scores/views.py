@@ -3,7 +3,7 @@ from .models import LiftwingResponse
 
 
 class Home(ListView):
+    model = LiftwingResponse
     context_object_name = "liftwingresponse"
+    paginate_by = 1000
 
-    def get_queryset(self):
-        return LiftwingResponse.objects.all()

@@ -5,7 +5,7 @@ services:
     build: .
     command: ["python", "-m", "daphne", "-b", "0.0.0.0", "-p", "80", "asgi:application"]
     depends_on:
-      - "background"
+      - "redis"
     volumes:
       - ./project:/project
       - ./data:/data
@@ -16,6 +16,8 @@ services:
       DJANGO_SETTINGS_MODULE: "settings"
     build: .
     command: ["django-admin", "runworker", "background"]
+    depends_on:
+      - "redis"
     volumes:
       - ./project:/project
       - ./data:/data
