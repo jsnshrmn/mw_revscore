@@ -4,17 +4,16 @@ from django.apps import apps
 from django.db import models
 from django.utils.timezone import now
 
+model_names = ["revertrisk-language-agnostic", "revertrisk-multilingual"]
+
 
 class RevisionCreateManager(models.Manager):
+    def unscored(self):
+        return self.scoreable().filter(liftwingresponse__isnull=True).order_by("rev_id")
+
     def scored(self):
         return (
-            self.scoreable()
-            .filter(
-                revertrisklaresponse__isnull=False, revertriskmlresponse__isnull=False
-            )
-            .select_related("revertrisklaresponse")
-            .select_related("revertriskmlresponse")
-            .order_by("rev_id")
+            self.scoreable().filter(liftwingresponse__isnull=False).order_by("rev_id")
         )
 
     def scoreable(self):
@@ -25,21 +24,13 @@ class RevisionCreateManager(models.Manager):
         return scoreable
 
     async def score(self):
-        models = ["revertrisk-language-agnostic", "revertrisk-multilingual"]
         url = "https://api.wikimedia.org"
         headers = {"User-Agent": "mw_revscore/dev (WMF Moderator Tools Test)"}
         session = ClientSession(url)
-        RevertRiskLaResponse = apps.get_model("mw_scores", "RevertRiskLaResponse")
-        RevertRiskMlResponse = apps.get_model("mw_scores", "RevertRiskMlResponse")
-        to_score = self.scoreable().filter(revertrisklaresponse__isnull=True)
-        to_score.union(
-            self.scoreable().filter(revertriskmlresponse__isnull=True)
-        ).order_by("rev_id")
-        async for revision_create in to_score:
-            if not revision_create.database.endswith("wiki"):
-                continue
+        LiftwingResponse = apps.get_model("mw_scores", "LiftwingResponse")
+        async for revision_create in self.unscored():
             lang = revision_create.database[:-4]
-            for model in models:
+            for model in model_names:
                 async with session.post(
                     "/service/lw/inference/v1/models/{}:predict".format(model),
                     json={"rev_id": revision_create.rev_id, "lang": lang},
@@ -50,7 +41,7 @@ class RevisionCreateManager(models.Manager):
                     try:
                         model_name = data["model_name"]
                     except KeyError:
-                        model_name = None
+                        model_name = model
                     try:
                         model_version = data["model_version"]
                     except KeyError:
@@ -67,27 +58,15 @@ class RevisionCreateManager(models.Manager):
                         error_detail = data["detail"]
                     except KeyError:
                         error_detail = None
-
-                    if model == "revertrisk-language-agnostic":
-                        await RevertRiskLaResponse(
-                            model_name=model_name,
-                            model_version=model_version,
-                            revision_create=revision_create,
-                            prediction=prediction,
-                            true_probability=true_probability,
-                            status_code=response.status,
-                            requested=requested,
-                        ).asave()
-                    elif model == "revertrisk-multilingual":
-                        await RevertRiskMlResponse(
-                            model_name=model_name,
-                            model_version=model_version,
-                            revision_create=revision_create,
-                            prediction=prediction,
-                            true_probability=true_probability,
-                            status_code=response.status,
-                            requested=requested,
-                        ).asave()
+                    await LiftwingResponse(
+                        model_name=model_name,
+                        model_version=model_version,
+                        revision_create=revision_create,
+                        prediction=prediction,
+                        true_probability=true_probability,
+                        status_code=response.status,
+                        requested=requested,
+                    ).asave()
         await sleep(250)
         await session.close()
 

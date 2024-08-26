@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>{{ object_list.count }} Scored Revisions</h2>
+<table>
+    <th>Revision ID</th>
+    <th>Model Name</th>
+    <th>Response Time</th>
+    {% for response in object_list %}
+    <tr>
+        <td>{{ response.revision_create.rev_id }}</td>
+        <td>{{ response.model_name }}</td>
+        <td>{{ response.elapsed }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

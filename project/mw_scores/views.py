@@ -1,3 +1,9 @@
-from django.shortcuts import render
+from django.views.generic import ListView
+from .models import LiftwingResponse
 
-# Create your views here.
+
+class Home(ListView):
+    context_object_name = "liftwingresponse"
+
+    def get_queryset(self):
+        return LiftwingResponse.objects.all()
