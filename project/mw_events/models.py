@@ -59,6 +59,8 @@ class RevisionCreateManager(models.Manager):
                     except KeyError:
                         error_detail = None
                     await LiftwingResponse(
+                        rev_id=revision_create.rev_id,
+                        dt=revision_create.dt,
                         model_name=model_name,
                         model_version=model_version,
                         revision_create=revision_create,

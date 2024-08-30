@@ -5,7 +5,8 @@ from .models import LiftwingResponse
 
 class LiftwingResponseAdmin(admin.ModelAdmin):
     list_display = (
-        "revision_create__rev_id",
+        "rev_id",
+        "dt",
         "model_name",
         "elapsed",
         "status_code",

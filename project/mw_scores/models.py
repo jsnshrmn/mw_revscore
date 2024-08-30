@@ -6,6 +6,23 @@ from mw_events.models import RevisionCreate
 class LiftwingResponse(models.Model):
     class Meta:
         app_label = "mw_scores"
+        indexes = [
+            models.Index(
+                fields=[
+                    "rev_id",
+                ]
+            ),
+            models.Index(
+                fields=[
+                    "dt",
+                ]
+            ),
+            models.Index(
+                fields=[
+                    "model_name",
+                ]
+            ),
+        ]
 
     def json_default():
         """
@@ -16,6 +33,10 @@ class LiftwingResponse(models.Model):
     revision_create = models.ForeignKey(
         RevisionCreate, on_delete=models.CASCADE, related_name="liftwingresponse"
     )
+    # denormalized from revision_create
+    rev_id = models.PositiveBigIntegerField(null=True)
+    # denormalized from revision_create
+    dt = models.DateTimeField(null=True)
     model_version = models.PositiveSmallIntegerField(null=True)
     # Should probably be enum for efficiency
     model_name = models.CharField(max_length=128, null=True)
