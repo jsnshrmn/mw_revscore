@@ -9,10 +9,16 @@ channel_layer = get_channel_layer()
 
 class BackgroundTaskConsumer(AsyncConsumer):
     async def score(self, message):
-        await score()
+        try:
+            await score()
+        except:
+            await channel_layer.send("background", {"type": "score"})
 
     async def collect(self, message):
-        await collect()
+        try:
+            await collect()
+        except:
+            await channel_layer.send("background", {"type": "collect"})
 
     async def ingest(self, message):
         await channel_layer.send("background", {"type": "score"})
