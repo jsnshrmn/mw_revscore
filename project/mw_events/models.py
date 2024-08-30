@@ -1,9 +1,18 @@
 from aiohttp import ClientSession
+from aiohttp_retry import RetryClient, ExponentialRetry
 from asyncio import sleep
 from django.apps import apps
 from django.db import models
 from django.utils.timezone import now
 
+# This could be a reusable standalone eventstream data collector app.
+# I've bundled in me_scores things to the model manager here
+# which breaks the separation of concerns, but was a convient way to
+# experiment with moving our ingest close to the orm.
+
+# @TODO: move this to settings, or maybe a model to mimic wikilink.
+#        for example, there could be a Jobs model that specified a wiki and a
+#        select list of models.
 model_names = ["revertrisk-language-agnostic", "revertrisk-multilingual"]
 
 
@@ -27,11 +36,15 @@ class RevisionCreateManager(models.Manager):
         url = "https://api.wikimedia.org"
         headers = {"User-Agent": "mw_revscore/dev (WMF Moderator Tools Test)"}
         session = ClientSession(url)
+        retry_options = ExponentialRetry(attempts=0)
+        client = RetryClient(
+            client_session=session, raise_for_status=False, retry_options=retry_options
+        )
         LiftwingResponse = apps.get_model("mw_scores", "LiftwingResponse")
         async for revision_create in self.unscored():
             lang = revision_create.database[:-4]
             for model in model_names:
-                async with session.post(
+                async with client.post(
                     "/service/lw/inference/v1/models/{}:predict".format(model),
                     json={"rev_id": revision_create.rev_id, "lang": lang},
                     headers=headers,
